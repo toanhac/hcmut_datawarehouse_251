@@ -1,0 +1,263 @@
+\section{Phân tích OLAP và trực quan hóa bằng Python}
+
+\subsection{Phân tích OLAP}
+
+OLAP (Online Analytical Processing) cho phép phân tích dữ liệu theo nhiều chiều khác nhau. Với star schema đã thiết kế, ta có thể thực hiện các truy vấn phân tích phong phú.
+
+\subsubsection{Các truy vấn OLAP tiêu biểu}
+
+\textbf{1. Tỷ lệ churn tổng thể}:
+
+\begin{lstlisting}[style=sql]
+SELECT 
+    COUNT(*) as total_customers,
+    SUM(churn_flag) as churned_customers,
+    ROUND(100.0 * SUM(churn_flag) / COUNT(*), 2) as churn_rate_pct
+FROM fact_customer_status;
+\end{lstlisting}
+
+\textbf{Kết quả}: Tỷ lệ churn khoảng 20\%, tương đương 2,000 khách hàng trong tổng số 10,000.
+
+\textbf{2. Tỷ lệ churn theo quốc gia}:
+
+\begin{lstlisting}[style=sql]
+SELECT 
+    g.country,
+    COUNT(*) as total_customers,
+    SUM(f.churn_flag) as churned_customers,
+    ROUND(100.0 * SUM(f.churn_flag) / COUNT(*), 2) as churn_rate_pct
+FROM fact_customer_status f
+JOIN dim_geo g ON f.geo_key = g.geo_key
+GROUP BY g.country
+ORDER BY churn_rate_pct DESC;
+\end{lstlisting}
+
+\textbf{Nhận xét}: Germany có tỷ lệ churn cao nhất (~32\%), tiếp theo là France (~16\%) và Spain (~17\%).
+
+\textbf{3. Tỷ lệ churn theo nhóm tuổi}:
+
+\begin{lstlisting}[style=sql]
+SELECT 
+    s.age_group,
+    COUNT(*) as total_customers,
+    SUM(f.churn_flag) as churned_customers,
+    ROUND(100.0 * SUM(f.churn_flag) / COUNT(*), 2) as churn_rate_pct
+FROM fact_customer_status f
+JOIN dim_segment s ON f.segment_key = s.segment_key
+GROUP BY s.age_group
+ORDER BY churn_rate_pct DESC;
+\end{lstlisting}
+
+\textbf{Nhận xét}: Nhóm Middle-aged (36-55 tuổi) có tỷ lệ churn cao nhất, tiếp theo là Senior, và thấp nhất là Young.
+
+\textbf{4. Số dư trung bình theo trạng thái churn}:
+
+\begin{lstlisting}[style=sql]
+SELECT 
+    CASE WHEN churn_flag = 1 THEN 'Churned' ELSE 'Retained' END as status,
+    ROUND(AVG(balance), 2) as avg_balance,
+    ROUND(AVG(estimated_salary), 2) as avg_salary,
+    ROUND(AVG(credit_score), 2) as avg_credit_score
+FROM fact_customer_status
+GROUP BY churn_flag;
+\end{lstlisting}
+
+\textbf{Nhận xét}: Khách hàng churn có số dư trung bình cao hơn (~91,000) so với khách hàng không churn (~72,000), điều này khá bất ngờ và cần phân tích sâu hơn.
+
+\textbf{5. Phân tích theo số lượng sản phẩm}:
+
+\begin{lstlisting}[style=sql]
+SELECT 
+    num_of_products,
+    COUNT(*) as total_customers,
+    SUM(churn_flag) as churned_customers,
+    ROUND(100.0 * SUM(churn_flag) / COUNT(*), 2) as churn_rate_pct
+FROM fact_customer_status
+GROUP BY num_of_products
+ORDER BY num_of_products;
+\end{lstlisting}
+
+\textbf{Nhận xét}: Khách hàng có 3-4 sản phẩm có tỷ lệ churn rất cao (>80\%), trong khi khách hàng có 1-2 sản phẩm có tỷ lệ churn thấp hơn (~20\%).
+
+\subsection{Trực quan hóa dữ liệu bằng Python}
+
+Sử dụng thư viện \texttt{matplotlib} để tạo các biểu đồ trực quan, giúp hiểu rõ hơn về dữ liệu.
+
+\subsubsection{Exploratory Data Analysis (EDA)}
+
+\textbf{1. Phân bố churn}:
+
+\begin{lstlisting}[style=python]
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Doc du lieu
+df = pd.read_csv('data/processed/fact_customer_status.csv')
+
+# Ve bieu do
+churn_counts = df['churn_flag'].value_counts()
+plt.figure(figsize=(8, 6))
+plt.bar(['Retained', 'Churned'], churn_counts.values, color=['green', 'red'])
+plt.title('Phan bo trang thai churn', fontsize=14)
+plt.ylabel('So luong khach hang')
+plt.savefig('reports/figures/churn_distribution.png', dpi=300, bbox_inches='tight')
+plt.close()
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/churn_distribution.png}
+\caption{Phân bố trạng thái churn của khách hàng}
+\label{fig:churn_dist}
+\end{figure}
+
+\textbf{2. Phân bố tuổi}:
+
+\begin{lstlisting}[style=python]
+# Merge voi dim_customer de lay thong tin tuoi
+dim_customer = pd.read_csv('data/processed/dim_customer.csv')
+fact_with_age = df.merge(dim_customer[['customer_key', 'age']], on='customer_key')
+
+# Ve histogram
+plt.figure(figsize=(10, 6))
+plt.hist(fact_with_age['age'], bins=30, edgecolor='black', alpha=0.7)
+plt.title('Phan bo tuoi cua khach hang', fontsize=14)
+plt.xlabel('Tuoi')
+plt.ylabel('So luong')
+plt.savefig('reports/figures/age_distribution.png', dpi=300, bbox_inches='tight')
+plt.close()
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/age_distribution.png}
+\caption{Phân bố tuổi của khách hàng}
+\label{fig:age_dist}
+\end{figure}
+
+\subsubsection{Dashboard-style Visualizations}
+
+\textbf{3. Tỷ lệ churn theo quốc gia}:
+
+\begin{lstlisting}[style=python]
+# Merge voi dim_geo
+dim_geo = pd.read_csv('data/processed/dim_geo.csv')
+fact_with_geo = df.merge(dim_geo[['geo_key', 'country']], on='geo_key')
+
+# Tinh ty le churn
+churn_by_country = fact_with_geo.groupby('country')['churn_flag'].agg(['sum', 'count'])
+churn_by_country['churn_rate'] = 100 * churn_by_country['sum'] / churn_by_country['count']
+
+# Ve bieu do
+plt.figure(figsize=(10, 6))
+plt.bar(churn_by_country.index, churn_by_country['churn_rate'], color=['blue', 'orange', 'green'])
+plt.title('Ty le churn theo quoc gia', fontsize=14)
+plt.ylabel('Ty le churn (%)')
+plt.xlabel('Quoc gia')
+plt.savefig('reports/figures/churn_by_geography.png', dpi=300, bbox_inches='tight')
+plt.close()
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/churn_by_geography.png}
+\caption{Tỷ lệ churn theo quốc gia}
+\label{fig:churn_geo}
+\end{figure}
+
+\textbf{4. So sánh số dư theo trạng thái churn}:
+
+\begin{lstlisting}[style=python]
+# Tinh so du trung binh
+avg_balance = df.groupby('churn_flag')['balance'].mean()
+
+plt.figure(figsize=(8, 6))
+plt.bar(['Retained', 'Churned'], avg_balance.values, color=['green', 'red'])
+plt.title('So du trung binh theo trang thai churn', fontsize=14)
+plt.ylabel('So du trung binh')
+plt.savefig('reports/figures/balance_by_churn.png', dpi=300, bbox_inches='tight')
+plt.close()
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/balance_by_churn.png}
+\caption{So sánh số dư trung bình theo trạng thái churn}
+\label{fig:balance_churn}
+\end{figure}
+
+\textbf{5. Tỷ lệ churn theo nhóm tuổi}:
+
+\begin{lstlisting}[style=python]
+# Merge voi dim_segment
+dim_segment = pd.read_csv('data/processed/dim_segment.csv')
+fact_with_segment = df.merge(dim_segment[['segment_key', 'age_group']], on='segment_key')
+
+# Tinh ty le churn
+churn_by_age = fact_with_segment.groupby('age_group')['churn_flag'].agg(['sum', 'count'])
+churn_by_age['churn_rate'] = 100 * churn_by_age['sum'] / churn_by_age['count']
+
+# Ve bieu do
+plt.figure(figsize=(10, 6))
+plt.bar(churn_by_age.index, churn_by_age['churn_rate'], color=['cyan', 'magenta', 'yellow'])
+plt.title('Ty le churn theo nhom tuoi', fontsize=14)
+plt.ylabel('Ty le churn (%)')
+plt.xlabel('Nhom tuoi')
+plt.savefig('reports/figures/churn_by_age_group.png', dpi=300, bbox_inches='tight')
+plt.close()
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/churn_by_age_group.png}
+\caption{Tỷ lệ churn theo nhóm tuổi}
+\label{fig:churn_age}
+\end{figure}
+
+\textbf{6. Tỷ lệ churn theo số lượng sản phẩm}:
+
+\begin{lstlisting}[style=python]
+churn_by_products = df.groupby('num_of_products')['churn_flag'].agg(['sum', 'count'])
+churn_by_products['churn_rate'] = 100 * churn_by_products['sum'] / churn_by_products['count']
+
+plt.figure(figsize=(10, 6))
+plt.bar(churn_by_products.index.astype(str), churn_by_products['churn_rate'])
+plt.title('Ty le churn theo so luong san pham', fontsize=14)
+plt.ylabel('Ty le churn (%)')
+plt.xlabel('So luong san pham')
+plt.savefig('reports/figures/churn_by_products.png', dpi=300, bbox_inches='tight')
+plt.close()
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/churn_by_products.png}
+\caption{Tỷ lệ churn theo số lượng sản phẩm}
+\label{fig:churn_products}
+\end{figure}
+
+\subsection{Insights từ phân tích}
+
+Từ các truy vấn OLAP và biểu đồ trực quan, ta rút ra được một số insights quan trọng:
+
+\begin{enumerate}
+    \item \textbf{Geography matters}: Khách hàng ở Germany có tỷ lệ churn cao gấp đôi so với France và Spain. Cần điều tra nguyên nhân (cạnh tranh, dịch vụ, văn hóa).
+    
+    \item \textbf{Age group}: Nhóm Middle-aged có tỷ lệ churn cao nhất, có thể do họ có nhiều lựa chọn ngân hàng hơn hoặc yêu cầu cao hơn về dịch vụ.
+    
+    \item \textbf{Balance paradox}: Khách hàng churn có số dư cao hơn, điều này ngược với trực giác. Có thể họ rời bỏ để tìm lãi suất tốt hơn ở nơi khác.
+    
+    \item \textbf{Product count}: Khách hàng có 3-4 sản phẩm có tỷ lệ churn rất cao. Có thể họ cảm thấy quá tải hoặc không hài lòng với chất lượng dịch vụ khi sử dụng nhiều sản phẩm.
+    
+    \item \textbf{Active members}: Khách hàng hoạt động tích cực có tỷ lệ churn thấp hơn, cho thấy engagement là yếu tố quan trọng.
+\end{enumerate}
+
+\subsection{Ứng dụng trong ra quyết định}
+
+Các insights này có thể được sử dụng để:
+\begin{itemize}
+    \item \textbf{Targeting}: Tập trung vào khách hàng ở Germany, nhóm Middle-aged, có 3-4 sản phẩm.
+    \item \textbf{Retention campaigns}: Thiết kế chương trình giữ chân riêng cho từng segment.
+    \item \textbf{Product optimization}: Xem xét lại chiến lược cross-selling, tránh đẩy quá nhiều sản phẩm cho một khách hàng.
+    \item \textbf{Engagement programs}: Khuyến khích khách hàng hoạt động tích cực hơn (ví dụ: rewards, gamification).
+\end{itemize}

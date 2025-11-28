@@ -1,0 +1,16 @@
+segment_key,age_group,income_group
+1,26-35,High
+2,26-35,Low
+3,26-35,Mid
+4,36-45,High
+5,36-45,Low
+6,36-45,Mid
+7,46-55,High
+8,46-55,Low
+9,46-55,Mid
+10,<=25,High
+11,<=25,Low
+12,<=25,Mid
+13,>=56,High
+14,>=56,Low
+15,>=56,Mid
