@@ -56,9 +56,6 @@ bank_churn_dwh_dss/
 - `Balance`, `NumOfProducts`, `HasCrCard`, `IsActiveMember`
 - `EstimatedSalary`, `Exited` (target variable: 0=Retained, 1=Churned)
 
-**⚠️ Important**: Download the dataset from Kaggle and place it at:  
-`data/raw/Churn_Modelling.csv`
-
 ## 🏗️ Data Warehouse Design
 
 ### Star Schema
@@ -92,13 +89,7 @@ pip install dash plotly
 
 ### Setup
 
-1. **Clone/Download** this project
-2. **Download dataset** from Kaggle and place at `data/raw/Churn_Modelling.csv`
-3. **Create directories**:
-   ```bash
-   cd bank_churn_dwh_dss
-   python src/config.py
-   ```
+**Clone/Download** this project
 
 ### Running the Pipeline
 
@@ -192,13 +183,6 @@ Then open your browser to: **http://localhost:8050**
 - Classification Report (Precision, Recall, F1-Score)
 - ROC-AUC Score
 
-### Optional: Random Forest
-
-Change model type in `churn_model.py`:
-```python
-model, X_train, X_test, y_train, y_test, feature_names = train_model(df, model_type='random_forest')
-```
-
 ## 📊 SQL Queries
 
 The `sql/olap_queries.sql` file contains 12 analytical queries, including:
@@ -227,8 +211,7 @@ This project demonstrates:
 This project is for educational purposes as part of university coursework.
 
 ## 👤 Author
-
-
+[@toanhac](https://github.com/toanhac)
 
 ## 🙏 Acknowledgments
 
