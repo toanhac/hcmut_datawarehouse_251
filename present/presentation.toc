@@ -1,0 +1,8 @@
+\babel@toc {vietnamese}{}\relax 
+\beamer@sectionintoc {1}{Giới thiệu}{3}{0}{1}
+\beamer@sectionintoc {2}{Thiết kế kho dữ liệu}{6}{0}{2}
+\beamer@sectionintoc {3}{Quy trình ETL}{10}{0}{3}
+\beamer@sectionintoc {4}{Phân tích OLAP \& Visualization}{13}{0}{4}
+\beamer@sectionintoc {5}{Mô hình Machine Learning}{17}{0}{5}
+\beamer@sectionintoc {6}{Hệ hỗ trợ quyết định (DSS)}{19}{0}{6}
+\beamer@sectionintoc {7}{Kết quả \& Kết luận}{24}{0}{7}
